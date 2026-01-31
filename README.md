@@ -68,8 +68,10 @@ Quick start:
 ```bash
 npm install -g wrangler
 npm run build
-wrangler pages deploy dist --project-name=oh-my-hungry-god
+wrangler pages deploy dist
 ```
+
+Configuration is already in `wrangler.toml`!
 
 ### Option 2: Azure Static Web Apps
 
