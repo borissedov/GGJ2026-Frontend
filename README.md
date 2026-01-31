@@ -43,10 +43,13 @@ Place your mood videos in `public/assets/videos/`:
 ## Running Locally
 
 ```bash
+npm install  # First time only
 npm run dev
 ```
 
 Open http://localhost:5173 in your browser.
+
+**Note**: Make sure you have a `.env` file with your backend URL (copy from `.env.example`).
 
 ## Building for Production
 
