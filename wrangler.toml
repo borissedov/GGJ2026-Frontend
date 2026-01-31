@@ -1,9 +1,0 @@
-name = "oh-my-hungry-god"
-compatibility_date = "2024-01-01"
-
-# Cloudflare Pages configuration
-pages_build_output_dir = "dist"
-
-# Note: Environment variables should be set in Cloudflare Dashboard
-# Dashboard -> Pages -> Your Project -> Settings -> Environment variables
-# Add: VITE_BACKEND_URL = https://your-backend.azurewebsites.net/gamehub
