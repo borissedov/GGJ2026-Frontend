@@ -14,7 +14,7 @@ export class WelcomeScreen {
                     <span class="join-label">Join Code:</span>
                     <span class="join-code">${joinCode}</span>
                 </div>
-                <p class="instruction">Scan QR code or enter code on your phone to join!</p>
+                <p class="instruction">Scan QR code or enter code on your phone to join the game!</p>
             </div>
         `;
     }
