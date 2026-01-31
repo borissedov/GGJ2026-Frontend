@@ -1,19 +1,9 @@
 name = "oh-my-hungry-god"
 compatibility_date = "2024-01-01"
 
+# Cloudflare Pages configuration
 pages_build_output_dir = "dist"
 
-[build]
-command = "npm run build"
-
-[build.upload]
-format = "service-worker"
-
-# Environment variables for production
-[env.production.vars]
-# VITE_BACKEND_URL will be set in Cloudflare Dashboard
-# or via: wrangler pages publish dist --binding VITE_BACKEND_URL=https://your-backend.azurewebsites.net/gamehub
-
-# Environment variables for preview deployments
-[env.preview.vars]
-# VITE_BACKEND_URL can be set to a staging backend if needed
+# Note: Environment variables should be set in Cloudflare Dashboard
+# Dashboard -> Pages -> Your Project -> Settings -> Environment variables
+# Add: VITE_BACKEND_URL = https://your-backend.azurewebsites.net/gamehub
