@@ -116,10 +116,10 @@ npm run build
 ### Step 4: Deploy
 
 ```bash
-wrangler pages deploy dist --project-name=oh-my-hungry-god
+wrangler pages deploy dist
 ```
 
-First time will ask you to confirm project creation.
+The project name and settings are already configured in `wrangler.toml`!
 
 ### Done! 🎉
 
@@ -172,8 +172,10 @@ Cloudflare auto-deploys on every push!
 
 ```bash
 npm run build
-wrangler pages deploy dist --project-name=oh-my-hungry-god
+wrangler pages deploy dist
 ```
+
+(Project settings are in `wrangler.toml`)
 
 ### If using direct upload:
 
