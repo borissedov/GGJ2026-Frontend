@@ -103,6 +103,7 @@ src/
 ├── ui/
 │   ├── welcome-screen.ts    # QR code + join code display
 │   ├── lobby-screen.ts      # Player list + ready states
+│   ├── loading-screen.ts    # Loading state display
 │   ├── countdown-screen.ts  # 10s countdown animation
 │   ├── game-screen.ts       # Order display + mood + totals
 │   └── results-screen.ts    # Final stats
