@@ -308,6 +308,9 @@ function renderResultsScreen() {
         restartButton.addEventListener('click', async () => {
             console.log('🔄 Restarting game...');
             
+            // Reset video manager state
+            videoManager.reset();
+            
             // Create new room and reset state
             const { roomId, joinCode } = await client.createRoom();
             state.roomId = roomId;
@@ -318,9 +321,20 @@ function renderResultsScreen() {
             state.orderNumber = 0;
             state.currentOrder = null;
             state.playerStats = [];
+            state.players = [];
             state.mood = GodMood.Neutral;
             
             console.log(`🎮 New room created - ID: ${roomId}, Code: ${joinCode}`);
+            
+            // Clear any existing intervals
+            if (countdownInterval !== null) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+            if (timerInterval !== null) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
             
             renderWelcomeScreen();
         });

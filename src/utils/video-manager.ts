@@ -477,4 +477,12 @@ export class MoodVideoManager {
     getCurrentMood(): GodMood {
         return this.currentMood;
     }
+    
+    reset(): void {
+        console.log('🔄 Resetting video manager state');
+        this.isPlayingChewing = false;
+        this.isPlayingGameOver = false;
+        this.isPlayingLobby = false;
+        this.currentMood = GodMood.Neutral;
+    }
 }
