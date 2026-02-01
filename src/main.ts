@@ -79,6 +79,7 @@ function setupEventHandlers() {
     });
     
     client.on('CountdownStarted', (event: any) => {
+        console.log('⏰ Countdown started!', event);
         const duration = event.durationSeconds;
         let remaining = duration;
         
@@ -97,14 +98,26 @@ function setupEventHandlers() {
     });
     
     client.on('CountdownCancelled', () => {
+        console.log('❌ Countdown cancelled');
         if (countdownInterval !== null) {
             clearInterval(countdownInterval);
             countdownInterval = null;
         }
+        // Return to lobby
+        if (state.players.length > 0) {
+            const connectedPlayers = state.players.filter(p => p.isConnected);
+            const readyPlayers = connectedPlayers.filter(p => p.isReady);
+            renderLobbyScreen(state.players, connectedPlayers.length, readyPlayers.length);
+        }
     });
     
     client.on('GameStarted', () => {
-        console.log('Game started!');
+        console.log('🎮 Game started!');
+        // Clear countdown interval
+        if (countdownInterval !== null) {
+            clearInterval(countdownInterval);
+            countdownInterval = null;
+        }
     });
     
     client.on('OrderStarted', (event: any) => {
