@@ -30,18 +30,23 @@ let timerInterval: number | null = null;
 
 async function init() {
     try {
+        console.log(`🚀 Connecting to backend: ${BACKEND_URL}`);
+        
+        // Setup event handlers BEFORE starting connection
+        setupEventHandlers();
+        
         await client.start();
-        console.log('Connected to backend');
+        console.log('✅ Connected to backend');
         
         const { roomId, joinCode } = await client.createRoom();
         state.roomId = roomId;
         state.joinCode = joinCode;
         
-        setupEventHandlers();
+        console.log(`🎮 Room created - ID: ${roomId}, Code: ${joinCode}`);
         renderWelcomeScreen();
         
     } catch (error) {
-        console.error('Failed to initialize:', error);
+        console.error('❌ Failed to initialize:', error);
         app.innerHTML = `
             <div class="error-screen">
                 <h1>Connection Error</h1>
@@ -55,10 +60,16 @@ async function init() {
 
 function setupEventHandlers() {
     client.on('RoomStateUpdated', (event: any) => {
+        console.log('📢 RoomStateUpdated received:', event);
         state.state = event.state;
         state.players = event.players;
         
-        if (event.state === RoomState.Lobby) {
+        // Handle state transitions (state can be number or string)
+        const stateValue = typeof event.state === 'number' ? event.state : event.state;
+        
+        // State: 0=Welcome, 1=Lobby, 2=Countdown, 3=InGame, 4=GameOver, 5=Results
+        if (stateValue === 1 || stateValue === 'Lobby' || stateValue === RoomState.Lobby) {
+            console.log('→ Transitioning to Lobby screen');
             renderLobbyScreen(event.players, event.connectedCount, event.readyCount);
         }
     });
