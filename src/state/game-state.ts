@@ -4,7 +4,8 @@ import type {
     Player,
     OrderStartedEvent,
     OrderTotalsUpdatedEvent,
-    OrderResolvedEvent
+    OrderResolvedEvent,
+    PlayerStats
 } from "../types";
 import { FruitType } from "../types";
 
@@ -29,6 +30,7 @@ export class GameState {
     successCount: number = 0;
     failCount: number = 0;
     totalOrders: number = 0;
+    playerStats: PlayerStats[] = [];
     
     updateOrder(event: OrderStartedEvent) {
         this.currentOrder = event;

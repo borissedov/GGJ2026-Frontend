@@ -6,8 +6,14 @@ Vanilla TypeScript web app for the multiplayer AR game host display.
 
 - **Real-time WebSocket Communication**: SignalR client for live updates
 - **Multiple Screens**: Welcome, Lobby, Countdown, Game, Results
-- **Mood Video System**: Video background changes based on god's mood
+- **Enhanced Visuals**: Logo branding, particle effects, emoji highlights
+- **Circular Arc Timer**: Visual countdown ring for each order
+- **Mood Video System**: Dynamic transitions between mood states with chewing animations
+- **Player Names**: Displays player names instead of IDs
+- **Per-Player Statistics**: Individual contribution tracking
+- **Team Rating**: Star-based rating (0-3) based on final mood
 - **QR Code Generation**: Easy room joining for mobile players
+- **Restart Functionality**: Play again button on results screen
 - **Responsive Design**: Optimized for large displays (TV/projector)
 
 ## Setup
@@ -32,13 +38,22 @@ Edit `.env` and set your backend URL:
 VITE_BACKEND_URL=http://localhost:5000/gamehub
 ```
 
-3. **Add mood videos:**
+3. **Add required assets:**
 
-Place your mood videos in `public/assets/videos/`:
-- `neutral.mp4` - Neutral mood
-- `happy.mp4` - Happy mood
-- `angry.mp4` - Angry mood
-- `burned.mp4` - Burned/game over mood
+Place assets in `public/assets/`:
+
+**Images:**
+- `images/logo-small.png` - Small logo for loading screen (100-150px)
+- `images/logo-large.png` - Large logo for welcome screen (300-400px)
+- `images/background-lobby.jpg` - Lobby background (already included)
+
+**Videos:**
+All videos in `videos/` directory (already included):
+- `moods/` - Mood loops (neutral, happy, angry)
+- `animations/` - Chewing animations
+- `transitions/` - Mood transition videos
+- `endings/` - Victory, defeat, neutral_ending, angry_ending
+- `lobby/` - Waiting video
 
 ## Running Locally
 
@@ -104,7 +119,7 @@ src/
 │   ├── welcome-screen.ts    # QR code + join code display
 │   ├── lobby-screen.ts      # Player list + ready states
 │   ├── loading-screen.ts    # Loading state display
-│   ├── countdown-screen.ts  # 10s countdown animation
+│   ├── countdown-screen.ts  # 6s countdown animation
 │   ├── game-screen.ts       # Order display + mood + totals
 │   └── results-screen.ts    # Final stats
 ├── state/
@@ -118,10 +133,16 @@ src/
 
 1. Open the display on a TV/projector
 2. The app will automatically connect to the backend and create a room
-3. Players scan the QR code or enter the join code on their phones
-4. When all players are ready, countdown starts
-5. Play through 10 orders
-6. View results at the end
+3. Logo and QR code displayed on welcome screen
+4. Players scan the QR code or enter the join code with their names
+5. When all players are ready, 6-second countdown starts
+6. Play through 10 orders with visual feedback:
+   - Circular arc timer depletes for each order
+   - Particle effects on successful hits
+   - Emoji highlights when requirements update
+   - Mood videos transition smoothly
+7. View results with team stars and per-player statistics
+8. Click "Play Again" to restart with a new room
 
 ## Customization
 

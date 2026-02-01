@@ -8,7 +8,7 @@ export class LobbyScreen {
             .map(p => `
                 <div class="player-item ${p.isReady ? 'ready' : 'not-ready'}">
                     <div class="player-status">${p.isReady ? '✓' : '⏳'}</div>
-                    <div class="player-name">Player ${p.playerId.substring(0, 8)}</div>
+                    <div class="player-name">${p.name}</div>
                 </div>
             `).join('');
         

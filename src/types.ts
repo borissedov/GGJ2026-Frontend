@@ -37,9 +37,11 @@ export type OrderStatus = typeof OrderStatus[keyof typeof OrderStatus];
 
 export interface Player {
     playerId: string;
+    name: string;
     connectionId: string;
     isConnected: boolean;
     isReady: boolean;
+    hitCount: number;
     connectedAt: string;
     lastPingAt?: string;
 }
@@ -108,10 +110,17 @@ export interface GameOverEvent {
     failCount: number;
 }
 
+export interface PlayerStats {
+    name: string;
+    hitCount: number;
+    contributionPercentage: number;
+}
+
 export interface GameFinishedEvent {
     roomId: string;
     totalOrders: number;
     successCount: number;
     failCount: number;
     finalMood: GodMood;
+    playerStats: PlayerStats[];
 }

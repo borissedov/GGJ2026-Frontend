@@ -8,7 +8,7 @@ import { GameScreen } from './ui/game-screen';
 import { ResultsScreen } from './ui/results-screen';
 import { LoadingScreen } from './ui/loading-screen';
 import { MoodVideoManager } from './utils/video-manager';
-import { RoomState } from './types';
+import { RoomState, GodMood, FruitType } from './types';
 
 // Configuration - UPDATE THIS WITH YOUR BACKEND URL
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000/gamehub';
@@ -179,8 +179,24 @@ function setupEventHandlers() {
     
     client.on('OrderTotalsUpdated', (event: any) => {
         console.log('📊 OrderTotalsUpdated:', event);
+        
+        // Track previous submitted values to detect which fruit increased
+        const previousSubmitted = { ...state.currentSubmitted };
+        
         state.updateTotals(event);
         renderGameScreen();
+        
+        // Detect which fruit was hit and trigger effects
+        if (state.currentOrder) {
+            for (const fruitKey of Object.keys(state.currentOrder.required) as FruitType[]) {
+                if (event.submitted[fruitKey] > previousSubmitted[fruitKey]) {
+                    // This fruit increased - trigger effects
+                    gameScreen.triggerSplash(fruitKey);
+                    gameScreen.triggerEmojiHighlight(fruitKey);
+                    break;
+                }
+            }
+        }
         
         // Play chewing animation on each hit
         const currentMood = state.mood !== null ? state.mood : 0;
@@ -215,30 +231,33 @@ function setupEventHandlers() {
         console.log(`😊 Mood changed to: ${event.newMood}`);
     });
     
-    client.on('GameOver', (event: any) => {
+    client.on('GameOver', async (event: any) => {
         console.log('💀 Game Over - Burnout');
         state.totalOrders = event.completedOrders;
+        state.successCount = event.successCount;
+        state.failCount = event.failCount;
+        state.mood = GodMood.Burned;
+        state.playerStats = event.playerStats || [];
         
-        // Play defeat video
-        videoManager.playGameOver(false);
+        // Play burned ending video
+        await videoManager.playEndingVideo(GodMood.Burned);
         
-        renderResultsScreen(true);
+        renderResultsScreen();
     });
     
-    client.on('GameFinished', (event: any) => {
+    client.on('GameFinished', async (event: any) => {
         console.log('🎉 Game Finished');
         state.totalOrders = event.totalOrders;
         state.successCount = event.successCount;
         state.failCount = event.failCount;
         state.mood = event.finalMood;
+        state.playerStats = event.playerStats || [];
         
-        // Play victory video if all 10 orders completed
-        const isVictory = event.totalOrders >= 10;
-        if (isVictory) {
-            videoManager.playGameOver(true);
-        }
+        // Play ending video based on final mood (once, non-looping)
+        await videoManager.playEndingVideo(event.finalMood);
         
-        renderResultsScreen(false);
+        // After ending video completes, show results screen
+        renderResultsScreen();
     });
 }
 
@@ -272,17 +291,40 @@ function renderGameScreen() {
     );
 }
 
-function renderResultsScreen(burnout: boolean) {
+function renderResultsScreen() {
     if (state.mood === null) return;
     
     document.body.className = 'game-background';
     app.innerHTML = resultsScreen.render(
-        state.totalOrders,
         state.successCount,
         state.failCount,
         state.mood,
-        burnout
+        state.playerStats
     );
+    
+    // Add restart button event listener
+    const restartButton = document.getElementById('restart-button');
+    if (restartButton) {
+        restartButton.addEventListener('click', async () => {
+            console.log('🔄 Restarting game...');
+            
+            // Create new room and reset state
+            const { roomId, joinCode } = await client.createRoom();
+            state.roomId = roomId;
+            state.joinCode = joinCode;
+            state.successCount = 0;
+            state.failCount = 0;
+            state.totalOrders = 0;
+            state.orderNumber = 0;
+            state.currentOrder = null;
+            state.playerStats = [];
+            state.mood = GodMood.Neutral;
+            
+            console.log(`🎮 New room created - ID: ${roomId}, Code: ${joinCode}`);
+            
+            renderWelcomeScreen();
+        });
+    }
 }
 
 init();

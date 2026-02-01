@@ -4,7 +4,7 @@ export class LoadingScreen {
         
         return `
             <div class="screen loading-screen">
-                <h1 class="loading-title">Oh My Hungry God</h1>
+                <img src="/assets/images/logo-small.png" alt="Oh My Hungry God" class="loading-logo" />
                 
                 <div class="loading-content">
                     <div class="loading-spinner"></div>

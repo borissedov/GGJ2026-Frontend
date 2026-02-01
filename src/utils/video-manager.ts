@@ -10,7 +10,7 @@ export class MoodVideoManager {
     private userHasInteracted: boolean = false; // Track user interaction for autoplay
     
     private moodVideos: Record<GodMood, string> = {
-        [GodMood.Burned]: '/assets/videos/endings/defeat.webm', // Use defeat for burned
+        [GodMood.Burned]: '/assets/videos/endings/burned_ending.webm',
         [GodMood.Angry]: '/assets/videos/moods/angry.webm',
         [GodMood.Neutral]: '/assets/videos/moods/neutral.webm',
         [GodMood.Happy]: '/assets/videos/moods/happy.webm'
@@ -25,21 +25,24 @@ export class MoodVideoManager {
     };
     
     // Transition videos (from_to mapping)
+    // Mood values: Happy=1, Neutral=0, Angry=-1, Burned=-2
     private transitionVideos: Map<string, string> = new Map([
-        ['0_1', '/assets/videos/transitions/neutral_happy.webm'],
-        ['1_0', '/assets/videos/transitions/happy_neutral.webm'],
-        ['0_-1', '/assets/videos/transitions/neutral_evel.webm'],
-        ['-1_0', '/assets/videos/transitions/evel_neutral.webm'],
+        ['0_1', '/assets/videos/transitions/neutral_happy.webm'],   // Neutral → Happy
+        ['1_0', '/assets/videos/transitions/happy_neutral.webm'],   // Happy → Neutral
+        ['0_-1', '/assets/videos/transitions/neutral_angry.webm'],  // Neutral → Angry
+        ['-1_0', '/assets/videos/transitions/angry_neutral.webm'],  // Angry → Neutral
     ]);
     
     private lobbyWaitingVideo = '/assets/videos/lobby/waiting.webm';
-    private victoryVideo = '/assets/videos/endings/victory.webm';
-    private defeatVideo = '/assets/videos/endings/defeat.webm';
+    private happyEndingVideo = '/assets/videos/endings/happy_ending.webm';
+    private neutralEndingVideo = '/assets/videos/endings/neutral_ending.webm';
+    private angryEndingVideo = '/assets/videos/endings/angry_ending.webm';
+    private burnedEndingVideo = '/assets/videos/endings/burned_ending.webm';
     
     private preloadedVideos: Map<string, HTMLVideoElement> = new Map();
     private preloadedImages: Map<string, HTMLImageElement> = new Map();
     private loadedCount: number = 0;
-    private totalAssets: number = 14; // 13 videos + 1 image
+    private totalAssets: number = 18; // 15 videos + 3 images (lobby bg + 2 logos)
     
     constructor(container: HTMLElement) {
         // Get the two video elements from the container
@@ -78,7 +81,7 @@ export class MoodVideoManager {
         console.log('🎬 Starting asset preload...');
         
         const videoUrls = [
-            // Mood loops (only 3: neutral, happy, angry - burned uses defeat)
+            // Mood loops (only 3: neutral, happy, angry - burned uses ending video)
             this.moodVideos[GodMood.Neutral],
             this.moodVideos[GodMood.Happy],
             this.moodVideos[GodMood.Angry],
@@ -89,12 +92,16 @@ export class MoodVideoManager {
             // Lobby waiting
             this.lobbyWaitingVideo,
             // Endings
-            this.victoryVideo,
-            this.defeatVideo
+            this.happyEndingVideo,
+            this.neutralEndingVideo,
+            this.angryEndingVideo,
+            this.burnedEndingVideo
         ];
         
         const imageUrls = [
-            '/assets/images/background-lobby.jpg'
+            '/assets/images/background-lobby.jpg',
+            '/assets/images/logo-small.png',
+            '/assets/images/logo-large.png'
         ];
         
         const videoPromises = videoUrls.map(url => this.preloadVideo(url));
@@ -361,11 +368,37 @@ export class MoodVideoManager {
         });
     }
     
+    async playEndingVideo(finalMood: GodMood): Promise<void> {
+        console.log(`🏁 Playing ending video for mood: ${finalMood}`);
+        this.isPlayingGameOver = true;
+        
+        // Select ending video based on final mood
+        let videoUrl: string;
+        switch (finalMood) {
+            case GodMood.Happy:
+                videoUrl = this.happyEndingVideo;
+                break;
+            case GodMood.Neutral:
+                videoUrl = this.neutralEndingVideo;
+                break;
+            case GodMood.Angry:
+                videoUrl = this.angryEndingVideo;
+                break;
+            case GodMood.Burned:
+            default:
+                videoUrl = this.burnedEndingVideo;
+                break;
+        }
+        
+        // Play ending video ONCE (non-looping)
+        await this.playVideoOnce(videoUrl);
+    }
+    
     playGameOver(isVictory: boolean) {
         console.log(`🏁 Playing game over: ${isVictory ? 'Victory' : 'Defeat'}`);
         this.isPlayingGameOver = true;
         
-        const videoUrl = isVictory ? this.victoryVideo : this.defeatVideo;
+        const videoUrl = isVictory ? this.happyEndingVideo : this.burnedEndingVideo;
         this.playVideoWithCrossfade(videoUrl, true);
     }
     
