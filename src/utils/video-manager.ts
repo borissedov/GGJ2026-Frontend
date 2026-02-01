@@ -157,14 +157,14 @@ export class MoodVideoManager {
         return this.totalAssets > 0 ? (this.loadedCount / this.totalAssets) * 100 : 0;
     }
     
-    setMood(mood: GodMood) {
+    async setMood(mood: GodMood): Promise<void> {
         if (mood === this.currentMood || this.isPlayingChewing || this.isPlayingGameOver) {
             return;
         }
         
         console.log(`🎭 Changing mood to: ${mood}`);
         this.currentMood = mood;
-        this.playVideoWithCrossfade(this.moodVideos[mood], true);
+        await this.playVideoWithCrossfade(this.moodVideos[mood], true);
     }
     
     async setLobbyWaiting(): Promise<void> {
@@ -285,8 +285,12 @@ export class MoodVideoManager {
             
             // Pause and reset the now-inactive video after transition
             setTimeout(() => {
-                activeVideo.pause();
-                activeVideo.currentTime = 0;
+                try {
+                    activeVideo.pause();
+                    activeVideo.currentTime = 0;
+                } catch (e) {
+                    // Ignore errors when pausing (e.g., if already paused)
+                }
             }, 500);
             
         } catch (err) {

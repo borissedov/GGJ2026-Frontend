@@ -72,6 +72,7 @@ async function init() {
 }
 
 function renderLoadingScreen() {
+    document.body.className = ''; // No background during loading
     // Update loading screen periodically
     const updateProgress = () => {
         const progress = videoManager.getLoadingProgress();
@@ -138,7 +139,7 @@ function setupEventHandlers() {
         }
     });
     
-    client.on('GameStarted', () => {
+    client.on('GameStarted', async () => {
         console.log('🎮 Game started!');
         // Clear countdown interval
         if (countdownInterval !== null) {
@@ -146,11 +147,12 @@ function setupEventHandlers() {
             countdownInterval = null;
         }
         
-        // Start with neutral mood
+        // Start with neutral mood video
         if (state.mood === null) {
             state.mood = 0; // Neutral
-            videoManager.setMood(0);
         }
+        console.log('🎭 Starting neutral mood video for game start');
+        await videoManager.setMood(0);
     });
     
     client.on('OrderStarted', (event: any) => {
@@ -233,22 +235,26 @@ function setupEventHandlers() {
 }
 
 async function renderWelcomeScreen() {
+    document.body.className = 'lobby-background';
     app.innerHTML = welcomeScreen.render(state.joinCode, state.roomId);
     await videoManager.setLobbyWaiting();
 }
 
 async function renderLobbyScreen(players: any[], connectedCount: number, readyCount: number) {
+    document.body.className = 'lobby-background';
     app.innerHTML = lobbyScreen.render(players, connectedCount, readyCount, state.joinCode);
     await videoManager.setLobbyWaiting();
 }
 
 function renderCountdownScreen(secondsRemaining: number) {
+    document.body.className = 'game-background';
     app.innerHTML = countdownScreen.render(secondsRemaining);
 }
 
 function renderGameScreen() {
     if (!state.currentOrder || state.mood === null) return;
     
+    document.body.className = 'game-background';
     app.innerHTML = gameScreen.render(
         state.orderNumber,
         state.currentOrder.required,
@@ -261,6 +267,7 @@ function renderGameScreen() {
 function renderResultsScreen(burnout: boolean) {
     if (state.mood === null) return;
     
+    document.body.className = 'game-background';
     app.innerHTML = resultsScreen.render(
         state.totalOrders,
         state.successCount,
