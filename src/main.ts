@@ -152,7 +152,8 @@ function setupEventHandlers() {
             state.mood = 0; // Neutral
         }
         console.log('🎭 Starting neutral mood video for game start');
-        await videoManager.setMood(0);
+        // Force the mood video to play (we're coming from lobby/countdown)
+        await videoManager.setMood(0, true);
     });
     
     client.on('OrderStarted', (event: any) => {

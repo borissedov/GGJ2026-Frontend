@@ -6,6 +6,8 @@ export class MoodVideoManager {
     private currentMood: GodMood = GodMood.Neutral;
     private isPlayingChewing: boolean = false;
     private isPlayingGameOver: boolean = false;
+    private isPlayingLobby: boolean = false; // Track if we're showing lobby video
+    private userHasInteracted: boolean = false; // Track user interaction for autoplay
     
     private moodVideos: Record<GodMood, string> = {
         [GodMood.Burned]: '/assets/videos/endings/defeat.webm', // Use defeat for burned
@@ -56,6 +58,20 @@ export class MoodVideoManager {
         
         this.primaryVideo.style.opacity = '1';
         this.secondaryVideo.style.opacity = '0';
+        
+        // Track user interaction for autoplay policy
+        const markInteracted = () => {
+            this.userHasInteracted = true;
+            // Remove the overlay if it exists
+            const overlay = document.getElementById('click-to-play-overlay');
+            if (overlay) {
+                overlay.remove();
+            }
+        };
+        
+        document.addEventListener('click', markInteracted, { once: true });
+        document.addEventListener('touchstart', markInteracted, { once: true });
+        document.addEventListener('keydown', markInteracted, { once: true });
     }
     
     async preloadAllVideos(): Promise<void> {
@@ -157,19 +173,26 @@ export class MoodVideoManager {
         return this.totalAssets > 0 ? (this.loadedCount / this.totalAssets) * 100 : 0;
     }
     
-    async setMood(mood: GodMood): Promise<void> {
-        if (mood === this.currentMood || this.isPlayingChewing || this.isPlayingGameOver) {
+    async setMood(mood: GodMood, force: boolean = false): Promise<void> {
+        // Skip if same mood unless forcing (e.g., coming from lobby) or if currently playing non-mood video
+        if (!force && !this.isPlayingLobby && mood === this.currentMood) {
             return;
         }
         
-        console.log(`🎭 Changing mood to: ${mood}`);
+        if (this.isPlayingChewing || this.isPlayingGameOver) {
+            return;
+        }
+        
+        console.log(`🎭 Changing mood to: ${mood}${force ? ' (forced)' : ''}`);
         this.currentMood = mood;
+        this.isPlayingLobby = false; // No longer playing lobby video
         await this.playVideoWithCrossfade(this.moodVideos[mood], true);
     }
     
     async setLobbyWaiting(): Promise<void> {
         if (this.isPlayingGameOver) return;
         console.log('📺 Playing lobby waiting video');
+        this.isPlayingLobby = true;
         await this.playVideoWithCrossfade(this.lobbyWaitingVideo, true);
     }
     
@@ -177,6 +200,7 @@ export class MoodVideoManager {
         if (this.isPlayingChewing || this.isPlayingGameOver) return;
         
         this.isPlayingChewing = true;
+        this.isPlayingLobby = false; // Ensure we're not in lobby mode
         
         // 1. Play chewing animation for CURRENT mood (before change)
         const chewingVideo = this.chewingVideos[currentMood] || this.chewingVideos[GodMood.Neutral];
@@ -276,6 +300,9 @@ export class MoodVideoManager {
         try {
             await inactiveVideo.play();
             
+            // Video played successfully - mark user interaction as not needed
+            this.userHasInteracted = true;
+            
             // Crossfade
             activeVideo.style.transition = 'opacity 0.5s ease-in-out';
             inactiveVideo.style.transition = 'opacity 0.5s ease-in-out';
@@ -303,6 +330,22 @@ export class MoodVideoManager {
     }
     
     private showClickToPlayOverlay(video: HTMLVideoElement): void {
+        // Don't show overlay if user has already interacted - just retry silently
+        if (this.userHasInteracted) {
+            // Try to play again since user has interacted
+            video.play().then(() => {
+                video.style.opacity = '1';
+                if (video === this.secondaryVideo) {
+                    this.primaryVideo.style.opacity = '0';
+                } else {
+                    this.secondaryVideo.style.opacity = '0';
+                }
+            }).catch(err => {
+                console.error('Failed to retry video playback:', err);
+            });
+            return;
+        }
+        
         // Create overlay only once
         if (document.getElementById('click-to-play-overlay')) return;
         
@@ -324,15 +367,16 @@ export class MoodVideoManager {
         
         overlay.innerHTML = `
             <div style="text-align: center; color: white;">
-                <h2 style="font-size: 2rem; margin-bottom: 1rem;">Click to Start</h2>
-                <p style="font-size: 1.2rem; opacity: 0.8;">Tap anywhere to begin</p>
+                <h2 style="font-size: 2rem; margin-bottom: 1rem;">🎮 Ready to Play</h2>
+                <p style="font-size: 1.2rem; opacity: 0.8;">Tap anywhere to start the game</p>
             </div>
         `;
         
         overlay.addEventListener('click', async () => {
+            this.userHasInteracted = true;
             try {
                 await video.play();
-                document.body.removeChild(overlay);
+                overlay.remove();
                 
                 // Show the video
                 video.style.opacity = '1';
