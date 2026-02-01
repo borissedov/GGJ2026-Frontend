@@ -35,8 +35,9 @@ export class MoodVideoManager {
     private defeatVideo = '/assets/videos/endings/defeat.webm';
     
     private preloadedVideos: Map<string, HTMLVideoElement> = new Map();
+    private preloadedImages: Map<string, HTMLImageElement> = new Map();
     private loadedCount: number = 0;
-    private totalVideos: number = 13; // 3 moods + 3 chewing + 4 transitions + 1 lobby + 2 endings
+    private totalAssets: number = 14; // 13 videos + 1 image
     
     constructor(container: HTMLElement) {
         // Get the two video elements from the container
@@ -58,7 +59,7 @@ export class MoodVideoManager {
     }
     
     async preloadAllVideos(): Promise<void> {
-        console.log('🎬 Starting video preload...');
+        console.log('🎬 Starting asset preload...');
         
         const videoUrls = [
             // Mood loops (only 3: neutral, happy, angry - burned uses defeat)
@@ -76,11 +77,16 @@ export class MoodVideoManager {
             this.defeatVideo
         ];
         
-        const promises = videoUrls.map(url => this.preloadVideo(url));
+        const imageUrls = [
+            '/assets/images/background-lobby.jpg'
+        ];
         
-        await Promise.all(promises);
+        const videoPromises = videoUrls.map(url => this.preloadVideo(url));
+        const imagePromises = imageUrls.map(url => this.preloadImage(url));
         
-        console.log('✅ All videos preloaded successfully');
+        await Promise.all([...videoPromises, ...imagePromises]);
+        
+        console.log('✅ All assets preloaded successfully');
     }
     
     private async preloadVideo(url: string): Promise<void> {
@@ -94,7 +100,7 @@ export class MoodVideoManager {
             const onCanPlay = () => {
                 this.loadedCount++;
                 this.preloadedVideos.set(url, video);
-                console.log(`📹 Loaded: ${url} (${this.loadedCount}/${this.totalVideos})`);
+                console.log(`📹 Loaded: ${url} (${this.loadedCount}/${this.totalAssets})`);
                 cleanup();
                 resolve();
             };
@@ -118,8 +124,37 @@ export class MoodVideoManager {
         });
     }
     
+    private async preloadImage(url: string): Promise<void> {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.src = url;
+            
+            const onLoad = () => {
+                this.loadedCount++;
+                this.preloadedImages.set(url, img);
+                console.log(`🖼️ Loaded: ${url} (${this.loadedCount}/${this.totalAssets})`);
+                cleanup();
+                resolve();
+            };
+            
+            const onError = () => {
+                console.error(`❌ Failed to load image: ${url}`);
+                cleanup();
+                reject(new Error(`Failed to load image: ${url}`));
+            };
+            
+            const cleanup = () => {
+                img.removeEventListener('load', onLoad);
+                img.removeEventListener('error', onError);
+            };
+            
+            img.addEventListener('load', onLoad);
+            img.addEventListener('error', onError);
+        });
+    }
+    
     getLoadingProgress(): number {
-        return this.totalVideos > 0 ? (this.loadedCount / this.totalVideos) * 100 : 0;
+        return this.totalAssets > 0 ? (this.loadedCount / this.totalAssets) * 100 : 0;
     }
     
     setMood(mood: GodMood) {
@@ -132,10 +167,10 @@ export class MoodVideoManager {
         this.playVideoWithCrossfade(this.moodVideos[mood], true);
     }
     
-    setLobbyWaiting(): void {
+    async setLobbyWaiting(): Promise<void> {
         if (this.isPlayingGameOver) return;
         console.log('📺 Playing lobby waiting video');
-        this.playVideoWithCrossfade(this.lobbyWaitingVideo, true);
+        await this.playVideoWithCrossfade(this.lobbyWaitingVideo, true);
     }
     
     async playChewing(currentMood: GodMood, newMood: GodMood, onComplete?: () => void): Promise<void> {
@@ -234,6 +269,10 @@ export class MoodVideoManager {
         inactiveVideo.loop = loop;
         inactiveVideo.currentTime = 0;
         
+        // Ensure video is muted for autoplay
+        inactiveVideo.muted = true;
+        inactiveVideo.playsInline = true;
+        
         try {
             await inactiveVideo.play();
             
@@ -252,7 +291,58 @@ export class MoodVideoManager {
             
         } catch (err) {
             console.error('Error playing video:', err);
+            console.warn('Video autoplay blocked. Will retry on user interaction.');
+            
+            // Show a click-to-play overlay if autoplay fails
+            this.showClickToPlayOverlay(inactiveVideo);
         }
+    }
+    
+    private showClickToPlayOverlay(video: HTMLVideoElement): void {
+        // Create overlay only once
+        if (document.getElementById('click-to-play-overlay')) return;
+        
+        const overlay = document.createElement('div');
+        overlay.id = 'click-to-play-overlay';
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            cursor: pointer;
+        `;
+        
+        overlay.innerHTML = `
+            <div style="text-align: center; color: white;">
+                <h2 style="font-size: 2rem; margin-bottom: 1rem;">Click to Start</h2>
+                <p style="font-size: 1.2rem; opacity: 0.8;">Tap anywhere to begin</p>
+            </div>
+        `;
+        
+        overlay.addEventListener('click', async () => {
+            try {
+                await video.play();
+                document.body.removeChild(overlay);
+                
+                // Show the video
+                video.style.opacity = '1';
+                if (video === this.secondaryVideo) {
+                    this.primaryVideo.style.opacity = '0';
+                } else {
+                    this.secondaryVideo.style.opacity = '0';
+                }
+            } catch (err) {
+                console.error('Failed to play video after user interaction:', err);
+            }
+        });
+        
+        document.body.appendChild(overlay);
     }
     
     getCurrentMood(): GodMood {

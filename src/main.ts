@@ -232,14 +232,14 @@ function setupEventHandlers() {
     });
 }
 
-function renderWelcomeScreen() {
-    videoManager.setLobbyWaiting();
+async function renderWelcomeScreen() {
     app.innerHTML = welcomeScreen.render(state.joinCode, state.roomId);
+    await videoManager.setLobbyWaiting();
 }
 
-function renderLobbyScreen(players: any[], connectedCount: number, readyCount: number) {
-    videoManager.setLobbyWaiting();
+async function renderLobbyScreen(players: any[], connectedCount: number, readyCount: number) {
     app.innerHTML = lobbyScreen.render(players, connectedCount, readyCount, state.joinCode);
+    await videoManager.setLobbyWaiting();
 }
 
 function renderCountdownScreen(secondsRemaining: number) {
