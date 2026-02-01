@@ -59,14 +59,9 @@ export class MoodVideoManager {
         this.primaryVideo.style.opacity = '1';
         this.secondaryVideo.style.opacity = '0';
         
-        // Track user interaction for autoplay policy
+        // Track any user interaction for autoplay policy (TV/Projector may receive input)
         const markInteracted = () => {
             this.userHasInteracted = true;
-            // Remove the overlay if it exists
-            const overlay = document.getElementById('click-to-play-overlay');
-            if (overlay) {
-                overlay.remove();
-            }
         };
         
         document.addEventListener('click', markInteracted, { once: true });
@@ -252,18 +247,37 @@ export class MoodVideoManager {
     }
     
     private async playVideoOnce(url: string): Promise<void> {
+        // Determine which video will become active after crossfade
+        const currentActive = this.primaryVideo.style.opacity === '1' ? this.primaryVideo : this.secondaryVideo;
+        const nextActive = currentActive === this.primaryVideo ? this.secondaryVideo : this.primaryVideo;
+        
         await this.playVideoWithCrossfade(url, false);
         
-        // Wait for video to end
+        // Wait for video to end (with timeout fallback)
         return new Promise<void>((resolve) => {
-            const activeVideo = this.primaryVideo.style.opacity === '1' ? this.primaryVideo : this.secondaryVideo;
+            let resolved = false;
             
             const onEnded = () => {
-                activeVideo.removeEventListener('ended', onEnded);
+                if (resolved) return;
+                resolved = true;
+                nextActive.removeEventListener('ended', onEnded);
                 resolve();
             };
             
-            activeVideo.addEventListener('ended', onEnded);
+            // Add timeout fallback in case video didn't play or has issues
+            const timeout = setTimeout(() => {
+                if (!resolved) {
+                    console.warn(`⚠️ Video playback timeout for ${url}, continuing...`);
+                    resolved = true;
+                    nextActive.removeEventListener('ended', onEnded);
+                    resolve();
+                }
+            }, 10000); // 10 second timeout
+            
+            nextActive.addEventListener('ended', () => {
+                clearTimeout(timeout);
+                onEnded();
+            });
         });
     }
     
@@ -321,76 +335,30 @@ export class MoodVideoManager {
             }, 500);
             
         } catch (err) {
-            console.error('Error playing video:', err);
-            console.warn('Video autoplay blocked. Will retry on user interaction.');
+            // Autoplay blocked - this is a TV/Projector display, fail silently
+            console.warn('Video autoplay blocked (TV/Projector display):', err);
             
-            // Show a click-to-play overlay if autoplay fails
-            this.showClickToPlayOverlay(inactiveVideo);
-        }
-    }
-    
-    private showClickToPlayOverlay(video: HTMLVideoElement): void {
-        // Don't show overlay if user has already interacted - just retry silently
-        if (this.userHasInteracted) {
-            // Try to play again since user has interacted
-            video.play().then(() => {
-                video.style.opacity = '1';
-                if (video === this.secondaryVideo) {
-                    this.primaryVideo.style.opacity = '0';
-                } else {
-                    this.secondaryVideo.style.opacity = '0';
+            // Try again if user has interacted
+            if (this.userHasInteracted) {
+                try {
+                    await inactiveVideo.play();
+                    // Crossfade
+                    activeVideo.style.transition = 'opacity 0.5s ease-in-out';
+                    inactiveVideo.style.transition = 'opacity 0.5s ease-in-out';
+                    activeVideo.style.opacity = '0';
+                    inactiveVideo.style.opacity = '1';
+                    setTimeout(() => {
+                        try {
+                            activeVideo.pause();
+                            activeVideo.currentTime = 0;
+                        } catch (e) { /* Ignore */ }
+                    }, 500);
+                } catch (retryErr) {
+                    console.warn('Retry also failed, continuing without video:', retryErr);
                 }
-            }).catch(err => {
-                console.error('Failed to retry video playback:', err);
-            });
-            return;
-        }
-        
-        // Create overlay only once
-        if (document.getElementById('click-to-play-overlay')) return;
-        
-        const overlay = document.createElement('div');
-        overlay.id = 'click-to-play-overlay';
-        overlay.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.9);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            cursor: pointer;
-        `;
-        
-        overlay.innerHTML = `
-            <div style="text-align: center; color: white;">
-                <h2 style="font-size: 2rem; margin-bottom: 1rem;">🎮 Ready to Play</h2>
-                <p style="font-size: 1.2rem; opacity: 0.8;">Tap anywhere to start the game</p>
-            </div>
-        `;
-        
-        overlay.addEventListener('click', async () => {
-            this.userHasInteracted = true;
-            try {
-                await video.play();
-                overlay.remove();
-                
-                // Show the video
-                video.style.opacity = '1';
-                if (video === this.secondaryVideo) {
-                    this.primaryVideo.style.opacity = '0';
-                } else {
-                    this.secondaryVideo.style.opacity = '0';
-                }
-            } catch (err) {
-                console.error('Failed to play video after user interaction:', err);
             }
-        });
-        
-        document.body.appendChild(overlay);
+            // Continue silently - don't block the interface
+        }
     }
     
     getCurrentMood(): GodMood {
