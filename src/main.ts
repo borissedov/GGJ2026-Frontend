@@ -178,8 +178,13 @@ function setupEventHandlers() {
     });
     
     client.on('OrderTotalsUpdated', (event: any) => {
+        console.log('📊 OrderTotalsUpdated:', event);
         state.updateTotals(event);
         renderGameScreen();
+        
+        // Play chewing animation on each hit
+        const currentMood = state.mood !== null ? state.mood : 0;
+        videoManager.playChewingOnly(currentMood);
     });
     
     client.on('OrderResolved', (event: any) => {
@@ -195,11 +200,13 @@ function setupEventHandlers() {
         // Update game screen briefly to show result
         renderGameScreen();
         
-        // Play chewing with old mood, then transition to new mood
+        // Only transition to new mood (no chewing - that happens on hits)
         console.log(`🍽️ Order resolved: ${oldMood} → ${newMood}`);
-        videoManager.playChewing(oldMood, newMood, () => {
-            console.log('✅ Chewing and transition complete');
-        });
+        if (oldMood !== newMood) {
+            videoManager.transitionToMood(oldMood, newMood, () => {
+                console.log('✅ Transition complete');
+            });
+        }
     });
     
     client.on('MoodChanged', (event: any) => {

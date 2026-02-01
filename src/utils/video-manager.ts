@@ -50,10 +50,15 @@ export class MoodVideoManager {
             throw new Error('Video elements not found in container');
         }
         
-        // Set default properties
+        // Set default properties - ensure attributes are set for Safari autoplay
         [this.primaryVideo, this.secondaryVideo].forEach(video => {
             video.muted = true;
             video.playsInline = true;
+            video.autoplay = true;
+            video.setAttribute('muted', '');
+            video.setAttribute('playsinline', '');
+            video.setAttribute('webkit-playsinline', '');
+            video.setAttribute('autoplay', '');
         });
         
         this.primaryVideo.style.opacity = '1';
@@ -98,6 +103,37 @@ export class MoodVideoManager {
         await Promise.all([...videoPromises, ...imagePromises]);
         
         console.log('✅ All assets preloaded successfully');
+        
+        // Try to unlock video playback by playing a preloaded video
+        await this.tryUnlockVideoPlayback();
+    }
+    
+    private async tryUnlockVideoPlayback(): Promise<void> {
+        console.log('🔓 Attempting to unlock video playback...');
+        
+        // Use a preloaded video source
+        const testVideoUrl = this.lobbyWaitingVideo;
+        const preloaded = this.preloadedVideos.get(testVideoUrl);
+        
+        if (preloaded) {
+            this.primaryVideo.src = preloaded.src;
+        } else {
+            this.primaryVideo.src = testVideoUrl;
+        }
+        
+        this.primaryVideo.currentTime = 0;
+        this.primaryVideo.loop = true;
+        
+        try {
+            // Try to play - this might work on some browsers
+            await this.primaryVideo.play();
+            console.log('✅ Video playback unlocked successfully');
+            this.userHasInteracted = true; // Mark as unlocked
+            this.isPlayingLobby = true; // Lobby video is now playing
+        } catch (err) {
+            console.log('🔒 Video playback still locked (will work after user interaction)');
+            // Don't pause - leave it ready to play
+        }
     }
     
     private async preloadVideo(url: string): Promise<void> {
@@ -186,6 +222,14 @@ export class MoodVideoManager {
     
     async setLobbyWaiting(): Promise<void> {
         if (this.isPlayingGameOver) return;
+        
+        // Check if lobby video is already playing (from unlock attempt)
+        const activeVideo = this.primaryVideo.style.opacity === '1' ? this.primaryVideo : this.secondaryVideo;
+        if (this.isPlayingLobby && activeVideo.src.includes('waiting') && !activeVideo.paused) {
+            console.log('📺 Lobby waiting video already playing');
+            return;
+        }
+        
         console.log('📺 Playing lobby waiting video');
         this.isPlayingLobby = true;
         await this.playVideoWithCrossfade(this.lobbyWaitingVideo, true);
@@ -214,6 +258,42 @@ export class MoodVideoManager {
         await this.playVideoWithCrossfade(this.moodVideos[newMood], true);
         
         this.isPlayingChewing = false;
+        
+        if (onComplete) {
+            onComplete();
+        }
+    }
+    
+    // Play chewing animation only (on each hit) - non-blocking
+    playChewingOnly(currentMood: GodMood): void {
+        if (this.isPlayingChewing || this.isPlayingGameOver) return;
+        
+        this.isPlayingChewing = true;
+        this.isPlayingLobby = false;
+        
+        const chewingVideo = this.chewingVideos[currentMood] || this.chewingVideos[GodMood.Neutral];
+        console.log(`🍽️ Playing chewing animation for hit (mood: ${currentMood})`);
+        
+        this.playVideoOnce(chewingVideo).then(() => {
+            // Return to mood loop after chewing
+            this.playVideoWithCrossfade(this.moodVideos[this.currentMood], true);
+            this.isPlayingChewing = false;
+        });
+    }
+    
+    // Transition to new mood without chewing (on order resolve)
+    async transitionToMood(fromMood: GodMood, toMood: GodMood, onComplete?: () => void): Promise<void> {
+        if (this.isPlayingGameOver) return;
+        
+        this.isPlayingLobby = false;
+        
+        console.log(`🔄 Transitioning from ${fromMood} to ${toMood}`);
+        await this.playTransition(fromMood, toMood);
+        
+        // Start new mood loop
+        this.currentMood = toMood;
+        console.log(`🎭 Starting ${toMood} mood loop`);
+        await this.playVideoWithCrossfade(this.moodVideos[toMood], true);
         
         if (onComplete) {
             onComplete();
