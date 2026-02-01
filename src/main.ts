@@ -6,6 +6,7 @@ import { LobbyScreen } from './ui/lobby-screen';
 import { CountdownScreen } from './ui/countdown-screen';
 import { GameScreen } from './ui/game-screen';
 import { ResultsScreen } from './ui/results-screen';
+import { LoadingScreen } from './ui/loading-screen';
 import { MoodVideoManager } from './utils/video-manager';
 import { RoomState } from './types';
 
@@ -19,6 +20,7 @@ const client = new GameClient(BACKEND_URL);
 const state = new GameState();
 const videoManager = new MoodVideoManager(videoContainer);
 
+const loadingScreen = new LoadingScreen();
 const welcomeScreen = new WelcomeScreen();
 const lobbyScreen = new LobbyScreen();
 const countdownScreen = new CountdownScreen();
@@ -30,6 +32,16 @@ let timerInterval: number | null = null;
 
 async function init() {
     try {
+        console.log('🎬 Starting initialization...');
+        
+        // Show loading screen
+        renderLoadingScreen();
+        
+        // Preload all videos
+        console.log('📹 Preloading videos...');
+        await videoManager.preloadAllVideos();
+        console.log('✅ Videos preloaded');
+        
         console.log(`🚀 Connecting to backend: ${BACKEND_URL}`);
         
         // Setup event handlers BEFORE starting connection
@@ -43,6 +55,7 @@ async function init() {
         state.joinCode = joinCode;
         
         console.log(`🎮 Room created - ID: ${roomId}, Code: ${joinCode}`);
+        
         renderWelcomeScreen();
         
     } catch (error) {
@@ -56,6 +69,20 @@ async function init() {
             </div>
         `;
     }
+}
+
+function renderLoadingScreen() {
+    // Update loading screen periodically
+    const updateProgress = () => {
+        const progress = videoManager.getLoadingProgress();
+        app.innerHTML = loadingScreen.render(progress);
+        
+        if (progress < 100) {
+            requestAnimationFrame(updateProgress);
+        }
+    };
+    
+    updateProgress();
 }
 
 function setupEventHandlers() {
@@ -118,6 +145,12 @@ function setupEventHandlers() {
             clearInterval(countdownInterval);
             countdownInterval = null;
         }
+        
+        // Start with neutral mood
+        if (state.mood === null) {
+            state.mood = 0; // Neutral
+            videoManager.setMood(0);
+        }
     });
     
     client.on('OrderStarted', (event: any) => {
@@ -147,7 +180,9 @@ function setupEventHandlers() {
     });
     
     client.on('OrderResolved', (event: any) => {
+        const oldMood = state.mood !== null ? state.mood : 0; // Default to neutral if null
         state.resolveOrder(event);
+        const newMood = event.newMood;
         
         if (timerInterval !== null) {
             clearInterval(timerInterval);
@@ -156,33 +191,55 @@ function setupEventHandlers() {
         
         // Update game screen briefly to show result
         renderGameScreen();
+        
+        // Play chewing with old mood, then transition to new mood
+        console.log(`🍽️ Order resolved: ${oldMood} → ${newMood}`);
+        videoManager.playChewing(oldMood, newMood, () => {
+            console.log('✅ Chewing and transition complete');
+        });
     });
     
     client.on('MoodChanged', (event: any) => {
         state.mood = event.newMood;
-        videoManager.setMood(event.newMood);
+        // Don't call setMood here - mood change is handled in playChewing flow
+        console.log(`😊 Mood changed to: ${event.newMood}`);
     });
     
     client.on('GameOver', (event: any) => {
+        console.log('💀 Game Over - Burnout');
         state.totalOrders = event.completedOrders;
+        
+        // Play defeat video
+        videoManager.playGameOver(false);
+        
         renderResultsScreen(true);
     });
     
     client.on('GameFinished', (event: any) => {
+        console.log('🎉 Game Finished');
         state.totalOrders = event.totalOrders;
         state.successCount = event.successCount;
         state.failCount = event.failCount;
         state.mood = event.finalMood;
+        
+        // Play victory video if all 10 orders completed
+        const isVictory = event.totalOrders >= 10;
+        if (isVictory) {
+            videoManager.playGameOver(true);
+        }
+        
         renderResultsScreen(false);
     });
 }
 
 function renderWelcomeScreen() {
+    videoManager.setLobbyWaiting();
     app.innerHTML = welcomeScreen.render(state.joinCode, state.roomId);
 }
 
 function renderLobbyScreen(players: any[], connectedCount: number, readyCount: number) {
-    app.innerHTML = lobbyScreen.render(players, connectedCount, readyCount);
+    videoManager.setLobbyWaiting();
+    app.innerHTML = lobbyScreen.render(players, connectedCount, readyCount, state.joinCode);
 }
 
 function renderCountdownScreen(secondsRemaining: number) {

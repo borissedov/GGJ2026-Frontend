@@ -26,12 +26,30 @@ body {
   height: 100%;
   z-index: 0;
   background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 #video-background video.mood-video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  transition: opacity 0.5s ease-in-out;
+}
+
+#video-primary {
+  z-index: 1;
+}
+
+#video-secondary {
+  z-index: 0;
 }
 
 #app {
@@ -55,6 +73,94 @@ body {
   background: rgba(0, 0, 0, 0.6);
   border-radius: 20px;
   backdrop-filter: blur(10px);
+}
+
+/* Background Images for Screens */
+.welcome-screen,
+.lobby-screen {
+  background-image: url('/assets/images/background-lobby.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  position: relative;
+}
+
+/* Game screens use black background to accent centered mask */
+.countdown-screen,
+.game-screen,
+.results-screen {
+  background: transparent;
+  position: relative;
+}
+
+/* Loading Screen */
+.loading-screen {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 60vh;
+}
+
+.loading-title {
+  font-size: 4rem;
+  margin-bottom: 3rem;
+  font-weight: bold;
+  background: linear-gradient(45deg, #ff6b6b, #ffd93d);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+}
+
+.loading-spinner {
+  width: 60px;
+  height: 60px;
+  border: 6px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #ffd93d;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.loading-message {
+  font-size: 1.5rem;
+  opacity: 0.9;
+}
+
+.loading-progress-container {
+  width: 400px;
+  max-width: 90vw;
+}
+
+.loading-progress-bar {
+  height: 30px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 15px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.loading-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ff6b6b, #ffd93d);
+  transition: width 0.3s ease;
+  border-radius: 15px;
+}
+
+.loading-progress-text {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #ffd93d;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 /* Welcome Screen */
@@ -110,9 +216,64 @@ body {
 }
 
 /* Lobby Screen */
+.lobby-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
 .lobby-title {
   font-size: 3rem;
   margin-bottom: 2rem;
+}
+
+.lobby-content {
+  display: flex;
+  gap: 3rem;
+  align-items: flex-start;
+  width: 100%;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.lobby-players {
+  flex: 1;
+  min-width: 400px;
+}
+
+.lobby-qr-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.lobby-qr-title {
+  font-size: 1.2rem;
+  opacity: 0.8;
+  margin-bottom: 0.5rem;
+}
+
+.lobby-qr-container {
+  padding: 1rem;
+  background: white;
+  border-radius: 15px;
+}
+
+.lobby-qr-code {
+  display: block;
+  width: 200px;
+  height: 200px;
+}
+
+.lobby-join-code {
+  font-size: 2rem;
+  font-weight: bold;
+  letter-spacing: 0.2em;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.5rem 1.5rem;
+  border-radius: 10px;
+  font-family: 'Courier New', monospace;
 }
 
 .players-container {
@@ -186,25 +347,40 @@ body {
   margin-top: 2rem;
 }
 
-/* Game Screen */
+/* Game Screen - Positioned in top-right corner */
+.game-screen {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: auto;
+  max-width: 500px;
+  min-width: 400px;
+  padding: 2rem;
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: 0 0 0 20px;
+  backdrop-filter: blur(10px);
+  z-index: 10;
+  text-align: left;
+}
+
 .game-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
-  font-size: 3rem;
+  margin-bottom: 1.5rem;
+  font-size: 2.5rem;
 }
 
 .mood-indicator {
-  font-size: 5rem;
+  font-size: 3rem;
 }
 
 .timer {
-  font-size: 4rem;
+  font-size: 3rem;
   font-weight: bold;
-  padding: 0.5rem 1.5rem;
+  padding: 0.5rem 1rem;
   background: rgba(255, 255, 255, 0.1);
-  border-radius: 15px;
+  border-radius: 10px;
 }
 
 .timer.urgent {
@@ -213,23 +389,23 @@ body {
 }
 
 .order-title {
-  font-size: 2.5rem;
-  margin-bottom: 2rem;
+  font-size: 2rem;
+  margin-bottom: 1.5rem;
 }
 
 .fruits-required {
   display: flex;
-  gap: 2rem;
-  justify-content: center;
+  gap: 1rem;
+  justify-content: flex-start;
   flex-wrap: wrap;
 }
 
 .fruit-item {
-  padding: 1.5rem 2rem;
+  padding: 1rem 1.5rem;
   background: rgba(255, 255, 255, 0.1);
-  border-radius: 15px;
+  border-radius: 10px;
   border: 3px solid transparent;
-  min-width: 150px;
+  min-width: 120px;
 }
 
 .fruit-item.pending {
@@ -248,23 +424,23 @@ body {
 }
 
 .fruit-emoji {
-  font-size: 4rem;
-  margin-bottom: 0.5rem;
+  font-size: 3rem;
+  margin-bottom: 0.3rem;
 }
 
 .fruit-count {
-  font-size: 2rem;
+  font-size: 1.5rem;
   font-weight: bold;
 }
 
 .progress-container {
-  margin-top: 3rem;
+  margin-top: 2rem;
 }
 
 .progress-bar {
-  height: 40px;
+  height: 30px;
   background: rgba(255, 255, 255, 0.1);
-  border-radius: 20px;
+  border-radius: 15px;
   overflow: hidden;
 }
 
@@ -275,8 +451,8 @@ body {
 }
 
 .progress-text {
-  margin-top: 1rem;
-  font-size: 1.5rem;
+  margin-top: 0.8rem;
+  font-size: 1.2rem;
 }
 
 /* Results Screen */
