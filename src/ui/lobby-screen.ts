@@ -1,5 +1,5 @@
 import type { Player } from "../types";
-import { generateQRCode } from "../utils/qr-generator";
+import { generateQRCodeUrl } from "../utils/qr-generator";
 
 export class LobbyScreen {
     render(players: Player[], connectedCount: number, readyCount: number, joinCode?: string): string {
@@ -19,7 +19,7 @@ export class LobbyScreen {
             <div class="lobby-qr-section">
                 <div class="lobby-qr-title">Scan to Join</div>
                 <div class="lobby-qr-container">
-                    <img src="${generateQRCode(joinCode)}" alt="QR Code" class="lobby-qr-code" />
+                    <img src="${generateQRCodeUrl(joinCode)}" alt="QR Code" class="lobby-qr-code" />
                 </div>
                 <div class="lobby-join-code">${joinCode}</div>
             </div>
