@@ -61,6 +61,7 @@ async function init() {
 function setupEventHandlers() {
     client.on('RoomStateUpdated', (event: any) => {
         console.log('📢 RoomStateUpdated received:', event);
+        console.log(`   State: ${event.state}, Connected: ${event.connectedCount}, Ready: ${event.readyCount}`);
         state.state = event.state;
         state.players = event.players;
         
@@ -69,8 +70,11 @@ function setupEventHandlers() {
         
         // State: 0=Welcome, 1=Lobby, 2=Countdown, 3=InGame, 4=GameOver, 5=Results
         if (stateValue === 1 || stateValue === 'Lobby' || stateValue === RoomState.Lobby) {
-            console.log('→ Transitioning to Lobby screen');
+            console.log('→ Rendering Lobby screen');
             renderLobbyScreen(event.players, event.connectedCount, event.readyCount);
+        } else if (stateValue === 2 || stateValue === 'Countdown' || stateValue === RoomState.Countdown) {
+            console.log('→ Countdown state detected, but countdown already started by CountdownStarted event');
+            // Countdown screen is handled by CountdownStarted event
         }
     });
     
