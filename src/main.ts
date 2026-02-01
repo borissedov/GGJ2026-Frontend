@@ -227,8 +227,11 @@ function setupEventHandlers() {
     
     client.on('MoodChanged', (event: any) => {
         state.mood = event.newMood;
-        // Don't call setMood here - mood change is handled in playChewing flow
-        console.log(`😊 Mood changed to: ${event.newMood}`);
+        console.log(`😊 Mood changed: ${event.oldMood} → ${event.newMood}`);
+        
+        // Update video manager's internal mood state for chewing animations
+        // This ensures chewing uses the correct mood video even if transition is still playing
+        videoManager.updateCurrentMood(event.newMood);
     });
     
     client.on('GameOver', async (event: any) => {

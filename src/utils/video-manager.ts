@@ -278,8 +278,10 @@ export class MoodVideoManager {
         this.isPlayingChewing = true;
         this.isPlayingLobby = false;
         
-        const chewingVideo = this.chewingVideos[currentMood] || this.chewingVideos[GodMood.Neutral];
-        console.log(`🍽️ Playing chewing animation for hit (mood: ${currentMood})`);
+        // Use the currentMood from class state, not parameter (more reliable)
+        const activeMood = this.currentMood;
+        const chewingVideo = this.chewingVideos[activeMood] || this.chewingVideos[GodMood.Neutral];
+        console.log(`🍽️ Playing chewing animation for hit (using mood: ${activeMood})`);
         
         this.playVideoOnce(chewingVideo).then(() => {
             // Return to mood loop after chewing
@@ -476,6 +478,11 @@ export class MoodVideoManager {
     
     getCurrentMood(): GodMood {
         return this.currentMood;
+    }
+    
+    updateCurrentMood(mood: GodMood): void {
+        this.currentMood = mood;
+        console.log(`🎭 Video manager mood updated to: ${mood}`);
     }
     
     reset(): void {
