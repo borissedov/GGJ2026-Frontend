@@ -295,6 +295,8 @@ export class MoodVideoManager {
         if (this.isPlayingGameOver) return;
         
         this.isPlayingLobby = false;
+        // Reset chewing flag - transition takes priority and will overwrite any chewing animation
+        this.isPlayingChewing = false;
         
         console.log(`🔄 Transitioning from ${fromMood} to ${toMood}`);
         await this.playTransition(fromMood, toMood);
@@ -440,10 +442,14 @@ export class MoodVideoManager {
             inactiveVideo.style.opacity = '1';
             
             // Pause and reset the now-inactive video after transition
+            // Only pause if the video is still inactive (opacity = 0)
+            // This prevents race conditions when multiple crossfades happen in quick succession
             setTimeout(() => {
                 try {
-                    activeVideo.pause();
-                    activeVideo.currentTime = 0;
+                    if (activeVideo.style.opacity === '0') {
+                        activeVideo.pause();
+                        activeVideo.currentTime = 0;
+                    }
                 } catch (e) {
                     // Ignore errors when pausing (e.g., if already paused)
                 }
@@ -464,8 +470,10 @@ export class MoodVideoManager {
                     inactiveVideo.style.opacity = '1';
                     setTimeout(() => {
                         try {
-                            activeVideo.pause();
-                            activeVideo.currentTime = 0;
+                            if (activeVideo.style.opacity === '0') {
+                                activeVideo.pause();
+                                activeVideo.currentTime = 0;
+                            }
                         } catch (e) { /* Ignore */ }
                     }, 500);
                 } catch (retryErr) {
