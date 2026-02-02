@@ -272,13 +272,13 @@ export class MoodVideoManager {
     }
     
     // Play chewing animation only (on each hit) - non-blocking
-    playChewingOnly(currentMood: GodMood): void {
+    playChewingOnly(): void {
         if (this.isPlayingChewing || this.isPlayingGameOver) return;
         
         this.isPlayingChewing = true;
         this.isPlayingLobby = false;
         
-        // Use the currentMood from class state, not parameter (more reliable)
+        // Use the current mood from class state
         const activeMood = this.currentMood;
         const chewingVideo = this.chewingVideos[activeMood] || this.chewingVideos[GodMood.Neutral];
         console.log(`🍽️ Playing chewing animation for hit (using mood: ${activeMood})`);

@@ -198,9 +198,8 @@ function setupEventHandlers() {
             }
         }
         
-        // Play chewing animation on each hit
-        const currentMood = state.mood !== null ? state.mood : 0;
-        videoManager.playChewingOnly(currentMood);
+        // Play chewing animation on each hit (uses video manager's current mood)
+        videoManager.playChewingOnly();
     });
     
     client.on('OrderResolved', (event: any) => {
