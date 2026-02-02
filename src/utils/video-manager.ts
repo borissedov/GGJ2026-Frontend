@@ -9,19 +9,22 @@ export class MoodVideoManager {
     private isPlayingLobby: boolean = false; // Track if we're showing lobby video
     private userHasInteracted: boolean = false; // Track user interaction for autoplay
     
+    // Mood loop videos - only 3 exist: angry, neutral, happy
+    // Burned mood uses angry video during gameplay (burned ending shown at game over)
     private moodVideos: Record<GodMood, string> = {
-        [GodMood.Burned]: '/assets/videos/endings/burned_ending.webm',
+        [GodMood.Burned]: '/assets/videos/moods/angry.webm',  // Use angry during gameplay
         [GodMood.Angry]: '/assets/videos/moods/angry.webm',
         [GodMood.Neutral]: '/assets/videos/moods/neutral.webm',
         [GodMood.Happy]: '/assets/videos/moods/happy.webm'
     };
     
-    // Mood-specific chewing videos
+    // Mood-specific chewing videos - only 3 exist: angry, neutral, happy
+    // Burned mood uses angry chewing video
     private chewingVideos: Record<GodMood, string> = {
         [GodMood.Neutral]: '/assets/videos/animations/chewing_neutral.webm',
         [GodMood.Happy]: '/assets/videos/animations/chewing_happy.webm',
         [GodMood.Angry]: '/assets/videos/animations/chewing_angry.webm',
-        [GodMood.Burned]: '/assets/videos/animations/chewing_angry.webm' // Fallback
+        [GodMood.Burned]: '/assets/videos/animations/chewing_angry.webm'  // Use angry
     };
     
     // Transition videos (from_to mapping)
@@ -81,7 +84,7 @@ export class MoodVideoManager {
         console.log('🎬 Starting asset preload...');
         
         const videoUrls = [
-            // Mood loops (only 3: neutral, happy, angry - burned uses ending video)
+            // Mood loops (only 3: neutral, happy, angry - burned uses angry during gameplay)
             this.moodVideos[GodMood.Neutral],
             this.moodVideos[GodMood.Happy],
             this.moodVideos[GodMood.Angry],
